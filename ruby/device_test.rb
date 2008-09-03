@@ -20,32 +20,34 @@ class DeviceTest < Test::Unit::TestCase
   end
   
   def test_ping
-    puts "\npinging #{@device.id}"
+    debug "pinging #{@device.id}"
     @device.ping
   end
   
   def test_get_capabilities
-    puts "\ngetting capabilities"
+    debug "getting capabilities"
     @device.get_capabilities
   end
 
   def test_relay
-    puts "\nturning relay on"
+    debug "turning relay on"
     @device.relay = true
 
-    puts "\nturning relay off"
+    debug "turning relay off"
     @device.relay = false
   end
 
   def test_led
-    puts "\nturning LED on"
+    debug "turning LED on"
     @device.led = true
 
-    puts "\nturning LED off"
+    debug "turning LED off"
     @device.led = false
   end
 
-
+  def debug(str)
+    puts "\n#{str}"
+  end
   def self.port=(port)
     @@port = port
   end
