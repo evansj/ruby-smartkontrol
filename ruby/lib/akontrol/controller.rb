@@ -25,30 +25,44 @@ module Akontrol
     end
   
     def send(message)
-      @serialport.print message
-      read_and_print
+      @serialport.print message.to_s
+      get_message
     end
   
     def close
       @serialport.close if @serialport
     end
   
-    private
-  
-    def get_reply(timeout=0.5)
+    def get_message(timeout=0.5)
       start = Time.now
       while Time.now - start < timeout do
         c = @serialport.getc
-        if c
-          @message << c
-          check_for_message
+        @message << c if c
+        if has_message
+          process_message
+          start = Time.now
         end
       end
     end
+
+    private
   
     def has_message
-      # a message starts with an "a" and has 12 characters total
-      @message =~ /a.{11}/
+      # see if we have a valid message somewhere in the buffer
+      @message =~ Message::FORMAT
+    end
+  
+    def process_message
+      if offset = @message =~ Message::FORMAT
+        # remove the message chars from the message buffer
+        @message[0..(offset+11)] = ''
+
+        message = Message.parse($~[0])
+
+        # pass on the message to the appropriate device object
+        device = @devices[message.id]
+        device.process_message(message) if device
+      end
     end
   
     def read_and_print(timeout=0.5)

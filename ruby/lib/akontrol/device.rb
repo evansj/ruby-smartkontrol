@@ -30,15 +30,15 @@ module Akontrol
       @controller.send command("O", port.to_s, (bool ? 1 : 0))
     end
   
-    private
-  
-    def command(name, *args)
-      pad("aC" + @id + name + args.map{|a|a.to_s}.join)
+    def process_message(message)
+      puts "Received message #{message}"
     end
   
-    # pad the message to 12 chars by appending as many '-' as are needed
-    def pad(message)
-      message.ljust(12, '-')
+    private
+  
+    # build a Message object for the requested command
+    def command(name, *args)
+      Message.build("C", @id, name, *args)
     end
   end
 end
