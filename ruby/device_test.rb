@@ -3,12 +3,12 @@
 require 'test/unit'
 require 'test/unit/testsuite'
 require 'test/unit/ui/console/testrunner'
-require 'controller'
-require 'device'
+require 'lib/akontrol'
 
 # uses Ruby-SerialPort from http://ruby-serialport.rubyforge.org
 
 class DeviceTest < Test::Unit::TestCase
+  include Akontrol
   def setup
     @controller = Controller.new(@@port)
     @device = Device.new(@@device_id)
