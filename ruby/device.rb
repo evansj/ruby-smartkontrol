@@ -35,7 +35,8 @@ class Device
     pad("aC" + @id + name + args.map{|a|a.to_s}.join)
   end
   
+  # pad the message to 12 chars by appending as many '-' as are needed
   def pad(message)
-    (message + '------------')[0..11]
+    message.ljust(12, '-')
   end
 end
