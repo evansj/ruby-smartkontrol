@@ -15,6 +15,10 @@ while true do
   puts "\npinging #{device.id}"
   device.ping
   sleep 0.2
+
+  puts "\ngetting capabilities"
+  device.get_capabilities
+  sleep 0.2
   
   puts "\nturning relay on"
   device.relay = true
