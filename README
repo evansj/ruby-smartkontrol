@@ -1,0 +1,17 @@
+
+For details of smartKONTROL, see here:
+http://www.ciseco.co.uk/smartKONTROL.html
+
+This is some test code to allow aSENSOR devices manufactured by Ciseco PLC
+to be interrogated using ruby.
+
+Instructions
+============
+
+First download and install the ruby-serialport library
+http://rubyforge.org/projects/ruby-serialport/
+
+now change to the ruby subdirectory and run:
+
+ruby comm.rb
+
