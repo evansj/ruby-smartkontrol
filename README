@@ -13,5 +13,7 @@ http://rubyforge.org/projects/ruby-serialport/
 
 now change to the ruby subdirectory and run:
 
-ruby comm.rb
+ruby device_test.rb S1 /dev/tty.usbserial-A5001pJU
 
+The first argument to device_test.rb is the device ID to test,
+the second is the name of the serial port to use.
