@@ -13,12 +13,20 @@ class Device
     @controller.send command("E")
   end
   
+  def get_capabilities
+    @controller.send command("Y")
+  end
+  
   def relay=(val)
-    @controller.send command("O", RELAY, (val ? 1 : 0))
+    output(RELAY, val)
   end
 
   def led=(val)
-    @controller.send command("O", LED, (val ? 1 : 0))
+    output(LED, val)
+  end
+  
+  def output(port, bool)
+    @controller.send command("O", port.to_s, (bool ? 1 : 0))
   end
   
   private
