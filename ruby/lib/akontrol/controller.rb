@@ -52,8 +52,12 @@ module Akontrol
     end
   
     def send(message)
-      puts "sending #{message.to_s}"
-      @serialport.syswrite message.to_s
+      msg = message.to_s
+      puts "sending #{msg}"
+      bytes_written = 0
+      while bytes_written < msg.length do
+        bytes_written += @serialport.syswrite message.to_s
+      end
     end
 
     def wait_for_reply
