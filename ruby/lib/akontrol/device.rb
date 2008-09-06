@@ -28,6 +28,7 @@ module Akontrol
   
     def output(port, bool)
       @controller.send command("O", port.to_s, (bool ? 1 : 0))
+      @controller.wait_for_reply
     end
   
     def process_message(message)

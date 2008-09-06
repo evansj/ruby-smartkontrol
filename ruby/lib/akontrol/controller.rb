@@ -11,12 +11,39 @@ module Akontrol
       opts = DEFAULT_PORT_OPTIONS.merge(options)
       @serialport = SerialPort.new(port, opts[:baud], opts[:data_bits], opts[:stop_bits], opts[:parity])
       throw IOError.new( "Couldn't connect") unless @serialport
-      @serialport.read_timeout = 500
 
       # this will hold a hash of devices, by device id
       @devices = {}
       # this will hold the incoming messages
       @message = ""
+      
+      start_reader
+      
+    end
+  
+    def start_poller
+      @serialport.read_timeout = 500
+    end
+  
+    def start_reader
+      @serialport.read_timeout = 10
+      @readerthread = Thread.new {
+        begin
+          while true
+            # puts "reading serial port..."
+            c = @serialport.sysread(1)
+            if c
+              # puts "reader thread got #{c}"
+              @message << c 
+              if has_message
+                process_message
+              end
+            end
+          end
+        rescue IOError => e
+          # puts "IOError #{e}"
+        end
+      }
     end
   
     def add_device(device)
@@ -25,12 +52,19 @@ module Akontrol
     end
   
     def send(message)
-      @serialport.print message.to_s
-      get_message
+      puts "sending #{message.to_s}"
+      @serialport.syswrite message.to_s
+    end
+
+    def wait_for_reply
+      sleep 0.5
     end
   
     def close
+      puts "closing..."
+      sleep 0.5
       @serialport.close if @serialport
+      @readerthread.join
     end
   
     def get_message(timeout=0.5)
