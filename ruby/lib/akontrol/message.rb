@@ -1,6 +1,6 @@
 module Akontrol
   class Message
-    FORMAT = /a.{11}/
+    FORMAT = /a.{4,}\r/
     
     class Command < Message
     end
@@ -21,7 +21,7 @@ module Akontrol
     def self.parse(message_string)
       # puts "Parsing message '#{message_string}'"
       # extract the command type, device id, command, and payload
-      if message_string =~ /a(.)(..)(.)(.{7})/
+      if message_string =~ /a(.)(..)(.)(.*)\r/
         message = TYPES[$~[1]].new
         message.type = $~[1]
         message.id = $~[2]
@@ -41,7 +41,8 @@ module Akontrol
     end
     
     def to_s
-      "a#{type}#{id}#{command}#{payload}".ljust(12, '-')
+      # "a#{type}#{id}#{command}#{payload}".ljust(12, '-')
+      "a#{type}#{id}#{command}#{payload}\r"
     end
   end
 end
