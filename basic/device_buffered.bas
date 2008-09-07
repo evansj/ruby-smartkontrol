@@ -80,30 +80,22 @@ packet_rx:
 ' look for "a"
 b0 = "a"
 gosub look_for
-if b1 <> "a" then
-	return
-endif
+if b1 <> "a" then finished_packet
 
 ' look for "C"
 b0 = "C"
 gosub look_for
-if b1 <> "C" then
-	return
-endif
+if b1 <> "C" then finished_packet
 
 ' look for the first byte of the device ID
 b0 = s1
 gosub look_for
-if b1 <> s1 then
-	return
-endif
+if b1 <> s1 then finished_packet
 
 ' look for the second byte of the device ID
 b0 = s2
 gosub look_for
-if b1 <> s2 then
-	return
-endif
+if b1 <> s2 then finished_packet
 
 gosub get_packet_char
 select b1
@@ -121,6 +113,9 @@ case "O"
 	if b3=LED_STR then gosub controlLed
 #endif
 endselect
+
+finished_packet:
+packet_ptr = buf_ptr
 return
 
 '###############################################################################
