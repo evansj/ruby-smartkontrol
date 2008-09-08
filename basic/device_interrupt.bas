@@ -28,7 +28,11 @@ symbol last_char = b10
 symbol packet_start = b11
 symbol packet_end = b12
 symbol packet_ptr = b13
-symbol BUFFER_END = 127 ' how many scratch memory bytes are there?
+symbol led_counter = b14
+' flash the LED after this many times through the main loop
+symbol LED_PERIOD = 100
+' how many scratch memory bytes are there?
+symbol BUFFER_END = 127
 symbol flags_byte = b0
 symbol has_packet = bit0
 
@@ -57,20 +61,24 @@ pause 100
 ' initialize packet pointers to 0
 packet_start = 0
 packet_end = 0
-
+led_counter = LED_PERIOD
 ' enable the interrupt handler
 setintflags %00100000,%00100000
 
 '###############################################################################
 
 main:
-'brief blink of the led
-high portc LED
-pause 5
-low portc LED
+dec led_counter
+if led_counter = 0 then
+	led_counter = LED_PERIOD
+	'brief blink of the led
+	high portc LED
+	pause 5
+	low portc LED
+endif
 
 if has_packet = 1 then gosub packet_rx
-pause 10000 ' 10 second pause
+pause 100 ' 0.1 second pause
 goto main
 
 ' ###############################################################################
