@@ -30,10 +30,10 @@ module Akontrol
       @readerthread = Thread.new {
         begin
           while true
-            puts "reading serial port..."
+            # puts "reading serial port..."
             c = @serialport.sysread(1)
             if c
-              puts "reader thread got #{c}"
+              # puts "reader thread got #{c}"
               @message << c 
               if has_message
                 process_message
@@ -63,7 +63,7 @@ module Akontrol
     end
 
     def wait_for_reply
-      sleep 1
+      sleep 0.5
     end
   
     def close
