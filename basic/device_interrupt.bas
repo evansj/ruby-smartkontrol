@@ -1,7 +1,8 @@
 ' ###############################################################################
 ' #### interrupt driven comms using hsersetup
 ' ####
-' #### The interrupt routine sets has_packet when a packet is available
+' #### The interrupt routine only exists to force the main loop
+' #### to drop out of the pause statement when a packet is available
 ' ###############################################################################
 
 #picaxe 28x1
@@ -23,11 +24,13 @@ symbol s2="1"
 #endif
 
 '###############################################################################
-symbol reserved_for_flags=b0
-symbol has_packet = bit0
 symbol last_char = b10
 symbol packet_start = b11
 symbol packet_end = b12
+symbol packet_ptr = b13
+symbol BUFFER_END = 127
+symbol flags_byte = b0
+symbol has_packet = bit0
 
 #ifdef HAS_RELAY
   symbol RELAY_STR=RELAY+48 'relay pin number as an ASCII char
@@ -52,7 +55,7 @@ ptr = 0
 packet_start = 0
 packet_end = 0
 
-' start monitoring serial port flag
+' enable the interrupt handler
 setintflags %00100000,%00100000
 
 '###############################################################################
@@ -60,26 +63,22 @@ setintflags %00100000,%00100000
 main:
 'blink the led
 high portc LED
-pause 100
+pause 10
 low portc LED
+if has_packet = 1 then gosub packet_rx
 pause 10000
-if has_packet=1 then
-	has_packet=0
-	gosub packet_rx
-endif
 goto main
 
 ' ###############################################################################
 ' Process the command that was received
 ' ###############################################################################
 packet_rx:
-' disable interrupts because we want to use ptr
-setintflags off
+has_packet=0
 ptr = packet_start
-' look for "a"
+' loop looking for "a"
 do
 	b1 = @ptrinc
-loop while b1 != "a" and ptr <> packet_end
+loop while b1 != "a" and ptr != packet_end
 if b1 != "a" then finished_packet
 
 ' look for "C"
@@ -106,9 +105,9 @@ case "O"
 	if b3=RELAY_STR then gosub controlRelay
 #endif
 endselect
+
 finished_packet:
 packet_start = packet_end
-setintflags %00100000,%00100000
 return
 
 '###############################################################################
@@ -149,19 +148,11 @@ return
 displayCapabilities:
 'Echo
 hserout 0,("aY",s1,s2,"E",CR)
-'Capabilities
-hserout 0,("aY",s1,s2,"Y",CR)
 #ifdef HAS_RELAY
 	'Relay Output On
 	hserout 0,("aY",s1,s2,"O",RELAY_STR,"0",CR)
 	'Relay Output Off
 	hserout 0,("aY",s1,s2,"O",RELAY_STR,"1",CR)
-#endif
-#ifdef HAS_LED
-	'LED Output On
-	hserout 0,("aY",s1,s2,"O",LED_STR,"0",CR)
-	'LED Output Off
-	hserout 0,("aY",s1,s2,"O",LED_STR,"1",CR)
 #endif
 return
 
@@ -170,29 +161,28 @@ sendEcho:
 hserout 0,("aR",s1,s2,"HERE",CR)
 return
 
+' if this interrupt routine is entered while the main thread is executing a
+' pause statement, then on return the next statement after the pause will
+' be executed (rather than completing the remaining pause time)
 interrupt:
-' reset the flag
-hserinflag = 0
-' re-enable the interrupt
-setintflags %00100000,%00100000
+	' reset the flag
+	hserinflag = 0
+	' re-enable the interrupt handler
+	setintflags %00100000,%00100000
+	' has a packet arrived?
+	' start looking from packet_end, the last place we checked
+	packet_ptr = packet_end
+	do while packet_ptr != hserptr
+		get packet_ptr, last_char
+		inc packet_ptr
+		if packet_ptr > BUFFER_END then
+			packet_ptr = 0
+		endif
+		if last_char=13 then
+			has_packet=1
+			exit ' terminate the do loop
+		endif
+	loop
+	packet_end = packet_ptr ' remember where we got up to
 
-' slight pause
-pause 20
-
-' has a packet arrived?
-' start looking from packet_end, the last place we checked
-ptr=packet_end
-do while ptr <> hserptr
-	last_char = @ptrinc
-	if last_char=13 then
-		has_packet = %1
-		exit ' terminate the do loop
-	endif
-loop
-packet_end=ptr ' remember where we got up to
-
-'sertxd("last char is ",#last_char,13,10) 
-'sertxd("char at ptr is ",#@ptr,13,10) 
-
-debug
 return
