@@ -1,8 +1,8 @@
 ' ###############################################################################
 ' #### interrupt driven comms using hsersetup
 ' ####
-' #### The interrupt routine only exists to force the main loop
-' #### to drop out of the pause statement when a packet is available
+' #### The interrupt routine sets has_packet to 1
+' #### when a packet is available
 ' ###############################################################################
 
 #picaxe 28x1
@@ -28,15 +28,21 @@ symbol last_char = b10
 symbol packet_start = b11
 symbol packet_end = b12
 symbol packet_ptr = b13
-symbol BUFFER_END = 127
+symbol BUFFER_END = 127 ' how many scratch memory bytes are there?
 symbol flags_byte = b0
 symbol has_packet = bit0
 
 #ifdef HAS_RELAY
   symbol RELAY_STR=RELAY+48 'relay pin number as an ASCII char
 #endif
+
 ' Which pin is the LED connected to?
 symbol LED=1
+
+' XBee pins
+symbol XBeeSleepPin = 6
+symbol XBeeDataPin = 4
+symbol XBeeResetPin = 7
 
 setfreq m4
 'configure serial port
@@ -45,13 +51,10 @@ hsersetup B4800_4, %01
 gosub XBEEwake
 pause 200
 
-
 hserout 0,("aA",s1,s2,"STARTED",CR)
-' sertxd ("aA",s1,s2,"STARTED",13,10)
 pause 100
 
-' initialize ptr to point to start of scratchpad area
-ptr = 0
+' initialize packet pointers to 0
 packet_start = 0
 packet_end = 0
 
@@ -61,12 +64,13 @@ setintflags %00100000,%00100000
 '###############################################################################
 
 main:
-'blink the led
+'brief blink of the led
 high portc LED
-pause 10
+pause 5
 low portc LED
+
 if has_packet = 1 then gosub packet_rx
-pause 10000
+pause 10000 ' 10 second pause
 goto main
 
 ' ###############################################################################
@@ -100,9 +104,9 @@ case "E"
 case "Y"
 	gosub displayCapabilities
 case "O"
-	b3 = @ptrinc
+	b2 = @ptrinc
 #ifdef HAS_RELAY
-	if b3=RELAY_STR then gosub controlRelay
+	if b2=RELAY_STR then gosub controlRelay
 #endif
 endselect
 
@@ -120,30 +124,24 @@ select b1
 	case "1"
 		high RELAY
 endselect
-b2=RELAY
-gosub showOutputStatus
+hserout 0,("aR",s1,s2,"O",RELAY_STR,b1,CR)
 return
 #endif
 
 '###############################################################################
-' input: b2 is the output port that we are reporting on
-'        b1 is the status
-showOutputStatus:
-b2 = b2 + 48 ' convert port to ASCII
-hserout 0,("aR",s1,s2,"O",b2,b1,CR)
-return
-'###############################################################################
 XBEEwake:
-high 6 'take XBEE SLEEP pin high
-high 4 'take XBEE DATA pin high
-high 7 'take XBEE RESET pin high
+high XBeeSleepPin
+high XBeeDataPin
+high XBeeResetPin
 return
+
 '###############################################################################
 XBEEsleep:
-low 6 'take XBEE SLEEP pin low
-low 4 'take XBEE DATA pin low
-low 7 'take XBEE RESET pin low
+low XBeeSleepPin
+low XBeeDataPin
+low XBeeResetPin
 return
+
 '###############################################################################
 displayCapabilities:
 'Echo
@@ -161,16 +159,19 @@ sendEcho:
 hserout 0,("aR",s1,s2,"HERE",CR)
 return
 
+' ###############################################################################
 ' if this interrupt routine is entered while the main thread is executing a
 ' pause statement, then on return the next statement after the pause will
 ' be executed (rather than completing the remaining pause time)
 interrupt:
 	' reset the flag
 	hserinflag = 0
-	' re-enable the interrupt handler
+	' re-enable the interrupt handler (won't actually happen until
+	' after the interrupt handler returns)
 	setintflags %00100000,%00100000
+	
 	' has a packet arrived?
-	' start looking from packet_end, the last place we checked
+	' start looking from packet_end, which is the last place we checked
 	packet_ptr = packet_end
 	do while packet_ptr != hserptr
 		get packet_ptr, last_char
