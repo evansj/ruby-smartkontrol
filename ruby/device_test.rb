@@ -37,14 +37,6 @@ class DeviceTest < Test::Unit::TestCase
     @device.relay = false
   end
 
-  def test_led
-    debug "turning LED on"
-    @device.led = true
-
-    debug "turning LED off"
-    @device.led = false
-  end
-
   def debug(str)
     puts "\n#{str}"
   end
