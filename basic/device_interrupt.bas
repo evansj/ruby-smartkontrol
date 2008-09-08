@@ -62,6 +62,7 @@ if has_packet=1 then
 	has_packet=0
 	gosub packet_rx
 endif
+pause 10
 goto main
 
 ' ###############################################################################
