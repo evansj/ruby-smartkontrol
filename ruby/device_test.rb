@@ -10,7 +10,7 @@ require 'lib/akontrol'
 class DeviceTest < Test::Unit::TestCase
   include Akontrol
   def setup
-    @controller = Controller.new(@@port)
+    @controller = Controller.new(@@port, :packet_type => @@packet_type)
     @device = Device.new(@@device_id)
     @controller.add_device @device
   end
@@ -46,16 +46,20 @@ class DeviceTest < Test::Unit::TestCase
   def self.device_id=(device_id)
     @@device_id = device_id
   end
+  def self.packet_type=(packet_type)
+    @@packet_type = packet_type
+  end
 end
 
 if $0 == __FILE__
-  if ARGV.length != 2
-    puts "Usage: ruby device_test.rb device_id serialport\n\ne.g. ruby device_test.rb S1 /dev/tty.usbserial-A5001pJU"
+  if ARGV.length != 3
+    puts "Usage: ruby device_test.rb packet_type device_id serialport\n\ne.g. ruby device_test.rb fixed S1 /dev/tty.usbserial-A5001pJU"
     exit 1
   else
-    puts "Testing device #{ARGV[0]} with serial port #{ARGV[1]}"
-    DeviceTest.device_id = ARGV[0]
-    DeviceTest.port = ARGV[1]
+    puts "Testing device #{ARGV[1]} with serial port #{ARGV[2]} and packet type #{ARGV[0]}"
+    DeviceTest.packet_type = ARGV[0].to_sym
+    DeviceTest.device_id = ARGV[1]
+    DeviceTest.port = ARGV[2]
   end
 end
 

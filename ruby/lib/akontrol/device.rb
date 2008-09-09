@@ -39,7 +39,7 @@ module Akontrol
   
     # build a Message object for the requested command
     def command(name, *args)
-      Message.build("C", @id, name, *args)
+      @controller.build_message("C", @id, name, *args)
     end
   end
 end

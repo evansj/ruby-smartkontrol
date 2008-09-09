@@ -6,11 +6,15 @@ module Akontrol
   
     attr_reader :serialport
     attr_reader :devices
+    attr_reader :packet_type  # :fixed or :variable
   
     def initialize(port, options={})
       opts = DEFAULT_PORT_OPTIONS.merge(options)
       @serialport = SerialPort.new(port, opts[:baud], opts[:data_bits], opts[:stop_bits], opts[:parity])
       throw IOError.new( "Couldn't connect") unless @serialport
+
+      # packet_type defaults to :fixed
+      @packet_type = options[:packet_type] || :fixed
 
       # this will hold a hash of devices, by device id
       @devices = {}
@@ -49,6 +53,10 @@ module Akontrol
     def add_device(device)
       device.controller = self
       @devices[device.id] = device
+    end
+    
+    def build_message(*args)
+      Message.build(@packet_type, *args)
     end
   
     def send(message)
@@ -89,15 +97,18 @@ module Akontrol
   
     def has_message
       # see if we have a valid message somewhere in the buffer
-      @message =~ Message::FORMAT
+      @message =~ Message::FORMAT[@packet_type]
     end
   
     def process_message
-      if offset = @message =~ Message::FORMAT
-        # remove the message chars from the message buffer
-        @message[0..(offset+11)] = ''
+      if offset = @message =~ Message::FORMAT[@packet_type]
+        # remove the message chars from the message buffer,
+        # and any other stray chars between the start of the
+        # buffer and the start of the message
+        packet_length = $~[0].length
+        @message[0..(offset+packet_length-1)] = ''
 
-        message = Message.parse($~[0])
+        message = Message.parse(@packet_type, $~[0])
 
         # pass on the message to the appropriate device object
         device = @devices[message.id]
